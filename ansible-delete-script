@@ -1,0 +1,87 @@
+- name: Delete AWS resources
+  hosts: localhost  # If running locally, otherwise specify your inventory
+  gather_facts: no
+  tasks:
+    - name: Terminate EC2 instance1
+      amazon.aws.ec2:
+        instance_ids:
+          - i-0c732acb5e771b231
+        region: us-east-1
+        state: absent
+        aws_access_key: " "
+        aws_secret_key: " "
+
+    - name: Terminate EC2 instance2
+      amazon.aws.ec2:
+        instance_ids:
+          - i-0bca9235d6f876ec9
+        region: us-east-1
+        state: absent
+        aws_access_key: " "
+        aws_secret_key: " "
+
+    - name: Delete the security group
+      amazon.aws.ec2_group:
+        aws_access_key: " "
+        aws_secret_key: " "
+        region: us-east-1
+        state: absent
+        group_id: "sg-04b00f8dec328948d"
+      register: sg_delete_result
+
+# Disassociate and Delete Public Route Table
+    - ec2_vpc_route_table:
+        aws_access_key: " "
+        aws_secret_key: " "
+        region: us-east-1
+        vpc_id: "vpc-0c58fb397f5ce2674"
+        state: absent
+        tags:
+          Name: "yash-pub-rt"
+
+    # Disassociate and Delete Private Route Table
+    - ec2_vpc_route_table:
+        aws_access_key: " "
+        aws_secret_key: " "
+        region: us-east-1
+        vpc_id: "vpc-0c58fb397f5ce2674"
+        state: absent
+        tags:
+          Name: "yash-pvt-rt"
+
+   # Delete Public Subnet
+    - name: Delete Public Subnet
+      amazon.aws.ec2_vpc_subnet:
+        vpc_id: "vpc-0c58fb397f5ce2674"
+        cidr: 10.0.0.0/20
+        region: us-east-1
+        state: absent
+        aws_access_key: " "
+        aws_secret_key: " "
+
+    # Delete Private Subnet
+    - name: Delete Private Subnet
+      amazon.aws.ec2_vpc_subnet:
+        vpc_id: "vpc-0c58fb397f5ce2674"
+        cidr: 10.0.16.0/20
+        region: us-east-1
+        state: absent
+        aws_access_key: " "
+        aws_secret_key: " "
+
+   # Delete Internet Gateway
+    - ec2_vpc_igw:
+        state: absent
+        vpc_id: "vpc-0c58fb397f5ce2674"
+        region: us-east-1
+        aws_access_key: " "
+        aws_secret_key: " "
+
+    - ec2_vpc_net:
+        aws_access_key: " "
+        aws_secret_key: " "
+        cidr_block: 10.0.0.0/16
+        name: yash-vpc
+        region: us-east-1
+        state: absent
+      register: vpc_result
