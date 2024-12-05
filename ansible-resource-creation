@@ -1,0 +1,133 @@
+# VPC Creation
+---
+- hosts: localhost
+  become: yes
+  tasks:
+    - ec2_vpc_net:
+        aws_access_key: " "
+        aws_secret_key: " "
+        cidr_block: 10.0.0.0/16
+        name: yash-vpc
+        region: us-east-1
+        state: present
+      register: vpc_result
+
+    # Internet gateway Creation
+    - ec2_vpc_igw:
+        aws_access_key: " "
+        aws_secret_key: " "
+        vpc_id: "{{ vpc_result.vpc.id }}"
+        region: us-east-1
+        state: present
+        tags:
+          Name: "yash-igw"
+      register: igw_result
+
+    # Create a Public Subnet
+    - ec2_vpc_subnet:
+        aws_access_key: " "
+        aws_secret_key: " "
+        vpc_id: "{{ vpc_result.vpc.id }}"
+        region: us-east-1
+        az: us-east-1a
+        state: present
+        cidr: 10.0.0.0/20
+        map_public: yes
+        resource_tags:
+          Name: "yash-pub"
+      register: pubsubnet_result
+
+    # Create a Private Subnet
+    - ec2_vpc_subnet:
+        aws_access_key: " "
+        aws_secret_key: " "
+        vpc_id: "{{ vpc_result.vpc.id }}"
+        region: us-east-1
+        az: us-east-1b
+        state: present
+        cidr: 10.0.16.0/20
+        map_public: no
+        resource_tags:
+          Name: "yash-pvt"
+      register: pvtsubnet_result
+
+    # Create a Public Route Table
+
+    - ec2_vpc_route_table:
+        aws_access_key: " "
+        aws_secret_key: " "
+        vpc_id: "{{ vpc_result.vpc.id }}"
+        region: us-east-1
+        state: present
+        tags:
+          Name: "yash-pub-rt"
+        subnets: [ "{{ pubsubnet_result.subnet.id }}" ]
+        routes:
+          - dest: 0.0.0.0/0
+            gateway_id: "{{ igw_result.gateway_id }}"
+      register: public_route_table
+
+    # Create a Private Route Table
+    - ec2_vpc_route_table:
+        aws_access_key: " "
+        aws_secret_key: " "
+        vpc_id: "{{ vpc_result.vpc.id }}"
+        region: us-east-1
+        state: present
+        tags:
+          Name: "yash-pvt-rt"
+        subnets: [ "{{ pvtsubnet_result.subnet.id }}" ]
+      register: private_route_table
+
+    # Create a Security Group
+    - ec2_group:
+        aws_access_key: " "
+        aws_secret_key: " "
+        vpc_id: "{{ vpc_result.vpc.id }}"
+        region: us-east-1
+        state: present
+        name: yash-sg
+        description: allow
+        tags:
+          Name: yash-sg
+        rules:
+          - proto: all
+            cidr_ip: 0.0.0.0/0
+            rule_desc: allow all traffic
+      register: security_group_results
+
+    # Launch EC2 Instance
+    - amazon.aws.ec2:
+        image: ami-0166fe664262f664c
+        instance_type: t2.micro
+        key_name: "yash"
+        region: us-east-1
+        wait: yes
+        count: 1
+        state: present
+        vpc_subnet_id: "{{ pubsubnet_result.subnet.id }}"
+        assign_public_ip: yes
+        group_id: "{{ security_group_results.group_id }}"
+        aws_access_key: " "
+        aws_secret_key: " "
+        user_data: "{{ lookup('file', 'data1.sh') }}"
+        instance_tags:
+          Name: yash-instance1
+
+    # Launch EC2 Instance2
+    - amazon.aws.ec2:
+        image: ami-0166fe664262f664c
+        instance_type: t2.micro
+        key_name: "yash"
+        region: us-east-1
+        wait: yes
+        count: 1
+        state: present
+        vpc_subnet_id: "{{ pubsubnet_result.subnet.id }}"
+        assign_public_ip: yes
+        group_id: "{{ security_group_results.group_id }}"
+        aws_access_key: " "
+        aws_secret_key: " "
+        user_data: "{{ lookup('file', 'data2.sh') }}"
+        instance_tags:
+          Name: yash-instance2
