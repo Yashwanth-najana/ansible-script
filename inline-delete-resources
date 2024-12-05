@@ -63,7 +63,7 @@
         vpc_id: "vpc-06f48fe04ff57e1e8"
         state: absent
         tags:
-          Name: "yash-pub-rt"
+          Name: "yash_pub_rt"
 
     # Disassociate and Delete Private Route Table
     - ec2_vpc_route_table:
@@ -73,7 +73,7 @@
         vpc_id: "vpc-06f48fe04ff57e1e8"
         state: absent
         tags:
-          Name: "yash-pvt-rt"
+          Name: "yash_pvt_rt"
 
    # Delete Public Subnet
     - name: Delete Public Subnet
@@ -106,8 +106,8 @@
     - ec2_vpc_net:
         aws_access_key: "{{ aws_access_key }}"
         aws_secret_key: "{{ aws_secret_key }}"
-        cidr_block: 10.0.0.0/16
-        name: yash-vpc
+        cidr_block: "{{ vpc_cidr_block }}"
+        name: yash_vpc
         region: "{{ region }}"
         state: absent
       register: vpc_result
